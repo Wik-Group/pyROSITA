@@ -1,0 +1,39 @@
+#======================================================================================================================#
+#                                           PyRosita Configuration File                                                #
+#                                     +--------------------------------------+                                         #
+#                                                                                                                      #
+# This file contains the basic configuration settings for cluster_generator. See the line comments for details on      #
+#   specific settings. Users are encouraged to edit settings and / or change settings as necessary.                    #
+#                                                                                                                      #
+# --- These settings are accessed using the cg.cgparams variable ------------------------------------------------------#
+#======================================================================================================================#
+system:
+  # -- These are system-wide settings for basic usage. -- #
+  logging:
+    main:
+      enabled: true # Use this to disable any logging. This will stop output to terminal!
+      format: "%(name)-3s : [%(levelname)-9s] %(asctime)s %(message)s" # Logger's string format for output
+      level: "INFO" # Only logging passed to this level or higher are displayed.
+      stream: "STDERR" # Can be STDERR or STDOUT.
+    developer:
+      # ! The developer logger passes detailed logging messages to file
+      enabled: false
+      output_directory: null # You have to set this before the development logger will function.
+
+  display:
+    # Display settings change how cluster_generator appears when in use.
+    spinners: true # [WARNING] Requires Halo to be installed.
+    progress_bars: true
+
+plotting:
+  # These are options for any of the default plots generated in cluster generator.
+  defaults:
+    # -- Latex settings -- #
+    text.usetex: false
+    # -- Tick Settings -- #
+    xtick.major.size: 8
+    ytick.major.size: 8
+    xtick.minor.size: 5
+    ytick.minor.size: 5
+    xtick.direction: "in"
+    ytick.direction: "in"
