@@ -112,7 +112,7 @@ class EHalo:
 
             return Halo(*args, **kwargs)
         except ImportError:
-            return cls.__init__(*args, **kwargs)
+            return cls(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         pass

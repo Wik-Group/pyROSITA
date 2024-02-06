@@ -87,7 +87,7 @@ class eROSITACatalog:
 
         return factor * err_radius
 
-    def cross_reference(self, max_workers=1,databases = None):
+    def cross_reference(self, max_workers=1,databases = None,maxsize=20):
         """
 
         Parameters
@@ -103,7 +103,7 @@ class eROSITACatalog:
         if databases is None:
             databases = ["NED"]
         # --> passing to the thread manager.
-        indices = split(np.arange(len(self.data)), max_workers)
+        indices = split(np.arange(len(self.data)), maxsize)
         from concurrent.futures import ThreadPoolExecutor
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
