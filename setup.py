@@ -4,8 +4,8 @@ from setuptools import setup
 
 
 setup(
-    name="pyrosita",
-    packages=["pyrosita"],
+    name="pyROSITA",
+    packages=["pyROSITA"],
     version="0.1.0",
     description="",
     author="Eliza C. Diggins",
