@@ -10,7 +10,7 @@ import pathlib as pt
 # Settings
 database_directory = "/home/ediggins/pyROSITA_test"
 catalog_path = None
-first_n = None #for debugging, only catalog the first N entries.
+first_n = 50 #for debugging, only catalog the first N entries.
 databases = "all" #NYI
 #--------------------------------------------------------------#
 # Setup
@@ -29,4 +29,4 @@ q = eROSITACatalog(catalog_path, _db_file=os.path.join(database_directory,"XREF.
 if first_n is not None:
     q.data = q.data.iloc[:first_n]
 
-q.cross_reference(max_workers=10,databases=["NED"])
+q.cross_reference(max_workers=10,databases=["NED","SIMBAD"])

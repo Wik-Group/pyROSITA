@@ -5,7 +5,7 @@ import os
 import pathlib as pt
 import threading
 from itertools import repeat
-from pyROSITA.queries import pull_NED_radius
+from pyROSITA.queries import pull_NED_radius,columns,pull_SIMBAD_radius
 import astropy.units as u
 import numpy as np
 import pandas as pd
@@ -106,10 +106,12 @@ class eROSITACatalog:
         indices = split(np.arange(len(self.data)), len(self.data)//maxsize)
         from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            executor.map(self._mt_cross_reference, repeat(self.data), indices,repeat(databases))
 
-    def _mt_cross_reference(self, dataframe, indices,databases):
+        for database in databases:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                executor.map(self._mt_cross_reference, repeat(self.data), indices,repeat(database))
+
+    def _mt_cross_reference(self, dataframe, indices,database):
         mylog.info(
             f"Cross referencing {len(indices)} objects on {threading.current_thread()}."
         )
@@ -127,16 +129,14 @@ class eROSITACatalog:
             _ra, _dec, _err_radius = _p
             # pulling the data
             pull = None
-            for database in databases:
-                if database == "NED":
-                    subpull = pull_NED_radius(SkyCoord(ra=_ra, dec=_dec, unit=(u.deg, u.deg)),5 * _err_radius * u.arcsec)
-                else:
-                    mylog.error(f"The database {database} doesn't exist.")
-                    continue
-                if pull is None:
-                    pull = subpull.loc[:,:]
-                else:
-                    pull = pd.concat([pull,subpull])
+            if database == "NED":
+                pull = pull_NED_radius(SkyCoord(ra=_ra, dec=_dec, unit=(u.deg, u.deg)),5 * _err_radius * u.arcsec)
+            elif database == "SIMBAD":
+                pull = pull_SIMBAD_radius(SkyCoord(ra=_ra, dec=_dec, unit=(u.deg, u.deg)),5 * _err_radius * u.arcsec)
+            else:
+                mylog.error(f"The database {database} doesn't exist.")
+                continue
+
             out.append(pull)
 
 
@@ -147,27 +147,12 @@ class eROSITACatalog:
 
         # now we can join all of the databases.
         ret = pd.concat(out, ignore_index=True)
-        ret = ret.loc[
-            :,
-            [
-                "Object Name",
-                "RA",
-                "DEC",
-                "Type",
-                "Velocity",
-                "Redshift",
-                "References",
-                "Associations",
-                "UID",
-                "IAUNAME",
-                "offset",
-                "source_db"
-            ],
-        ]
+
+        ret = ret.loc[:,columns[database]]
 
         with threading.Lock():
             mylog.info(
                 f"Thread: {threading.current_thread()} -- Writing {len(ret)} lines to DB."
             )
-            ret.to_sql(name="XREF_BASE", con=self.engine, if_exists="append")
+            ret.to_sql(name=f"XREF_{database}", con=self.engine, if_exists="append")
         mylog.info(f"Thread: {threading.current_thread()} -- Completed.")
