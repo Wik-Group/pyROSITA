@@ -169,8 +169,5 @@ class eROSITACatalog:
             mylog.info(
                 f"Thread: {threading.current_thread()} -- Writing {len(ret)} lines to DB."
             )
-            try:
-                ret.to_sql(name="XREF_BASE", con=self.engine, if_exists="append")
-            except Exception as exp:
-                mylog.error(exp.__str__())
+            ret.to_sql(name="XREF_BASE", con=self.engine, if_exists="append")
         mylog.info(f"Thread: {threading.current_thread()} -- Completed.")
