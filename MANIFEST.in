@@ -1,1 +1,1 @@
-recursive-include cluster_generator/bin *
+recursive-include pyROSITA/bin *
