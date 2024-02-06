@@ -2,19 +2,12 @@
 Utility functions for basic functionality of the py:module:`cluster_generator` package.
 """
 import logging
-import multiprocessing
 import os
 import pathlib as pt
 import sys
 
-import numpy as np
 import yaml
-from more_itertools import always_iterable
-from numpy.random import RandomState
-from scipy.integrate import quad
-from unyt import kpc
-from unyt import physical_constants as pc
-from unyt import unyt_array, unyt_quantity
+from unyt import unyt_array
 
 # -- configuration directory -- #
 _config_directory = os.path.join(pt.Path(__file__).parents[0], "bin", "config.yaml")
@@ -58,7 +51,7 @@ stream = (
     if cgparams["system"]["logging"]["main"]["stream"] in ["STDOUT", "stdout"]
     else sys.stderr
 )
-cgLogger = logging.getLogger("cluster_generator")
+cgLogger = logging.getLogger("pyROSITA")
 
 cg_sh = logging.StreamHandler(stream=stream)
 
@@ -107,3 +100,30 @@ else:
     devLogger.propagate = False
     devLogger.disabled = True
 
+
+class EHalo:
+    def __new__(cls, *args, **kwargs):
+        if "text" in kwargs:
+            kwargs["text"] = "[pyROSITA] " + kwargs["text"]
+        kwargs["stream"] = sys.stderr
+
+        try:
+            from halo import Halo
+
+            return Halo(*args, **kwargs)
+        except ImportError:
+            return cls.__init__(*args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        pass
+
+
+def split(a, n):
+    k, m = divmod(len(a), n)
+    return [a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n)]

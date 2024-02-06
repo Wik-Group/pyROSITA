@@ -1,0 +1,26 @@
+{
+  "release": {
+    "data_release_1": {
+      "url_name": "https://erosita.mpe.mpg.de/dr1",
+      "available_datagroups": {
+        "catalogs": {
+          "url_name": "https://erosita.mpe.mpg.de/dr1/AllSkySurveyData_dr1/Catalogues_dr1",
+          "available_datagroups": {
+            "eRASS1 Main catalog": {
+              "description": "eRASS dr1 complete catalog of sources",
+              "url_name": "https://erosita.mpe.mpg.de/dr1/AllSkySurveyData_dr1/Catalogues_dr1/MerloniA_DR1/eRASS1_Main.tar.gz"
+            },
+            "eRASS1 Hard catalog": {
+              "description": "eRASS dr1 hard band catalog of sources",
+              "url_name": "https://erosita.mpe.mpg.de/dr1/AllSkySurveyData_dr1/Catalogues_dr1/MerloniA_DR1/eRASS1_Hard.tar.gz"
+            },
+            "eRASS1 Supplementary catalogue": {
+              "description": "eRASS dr1 supplement catalog of sources",
+              "url_name": "https://erosita.mpe.mpg.de/dr1/AllSkySurveyData_dr1/Catalogues_dr1/MerloniA_DR1/eRASS1_Supp.tar.gz"
+            }
+          }
+        }
+      }
+    }
+  }
+}
