@@ -103,7 +103,7 @@ class eROSITACatalog:
         if databases is None:
             databases = ["NED"]
         # --> passing to the thread manager.
-        indices = split(np.arange(len(self.data)), maxsize)
+        indices = split(np.arange(len(self.data)), len(self.data)//maxsize)
         from concurrent.futures import ThreadPoolExecutor
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
