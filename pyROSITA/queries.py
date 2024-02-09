@@ -49,7 +49,7 @@ class Database:
             )
 
     @classmethod
-    def query_radius(cls, coordinates, radii, uid, ext, maxworkers=10, connection=None):
+    def query_radius(cls, coordinates, radii, uid, ext, maxworkers=10, connection=None,maxgroup_size=20):
         """
 
         Parameters
@@ -78,10 +78,10 @@ class Database:
 
         # split for the threads
         _coordinates, _radii, _uid, _ext = (
-            split(coordinates, _mtps),
-            split(radii, _mtps),
-            split(uid, _mtps),
-            split(ext, _mtps),
+            split(coordinates, len(coordinates)//maxgroup_size),
+            split(radii, len(radii)//maxgroup_size),
+            split(uid, len(uid)//maxgroup_size),
+            split(ext, len(ext)//maxgroup_size),
         )
 
         # manage the connection
@@ -96,7 +96,7 @@ class Database:
             _output_array = []
 
         with EHalo(
-            text=f"Querying {cls.name} on {_mtps} threads with {len(coordinates)} calls."
+            text=f"Querying {cls.name} on {_mtps} threads with {len(coordinates)} calls [groups = {len(coordinates)//maxgroup_size}]."
         ):
             with ThreadPoolExecutor(max_workers=_mtps) as executor:
                 results = executor.map(
@@ -189,7 +189,7 @@ class Database:
 
 class NED(Database):
     _astroquery_obj = Ned  # The object reference for building astroquery calls.
-    _timeout_req = 0.1  #
+    _timeout_req = 1  #
     _max_threads_per_second = 15
     name = "NED"
 

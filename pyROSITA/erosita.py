@@ -151,7 +151,8 @@ class eROSITACatalog:
                     self.uid,
                     self.ext,
                     connection=self.db_file,
-                    maxworkers=10,
+                    maxworkers=5,
+                    maxgroup_size=5
                 )
             )
 

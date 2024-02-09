@@ -9,9 +9,9 @@ from pyROSITA.utils import mylog
 
 # --------------------------------------------------------------#
 # Settings
-database_directory = "/home/ediggins/pyROSITA_test"
+database_directory = "/scratch/general/vast/u1281896/EROSITA/XREF_FEB"
 catalog_path = os.path.join(database_directory, "eRASS1_Hard.v1.0.fits")
-first_n = 50  # for debugging, only catalog the first N entries.
+first_n = None  # for debugging, only catalog the first N entries.
 databases = "all"  # NYI
 # --------------------------------------------------------------#
 # Setup
