@@ -18,7 +18,7 @@ _dtypes = {
     "RA": sql_type.TEXT,
     "DEC": sql_type.TEXT,
     "Type": sql_type.TEXT,
-    "UID": sql_type.TEXT,
+    "UID": sql_type.BIGINT,
     "EXT": sql_type.FLOAT,
     "ERASS_RA": sql_type.TEXT,
     "ERASS_DEC": sql_type.TEXT
@@ -129,29 +129,32 @@ class Database:
         )
         for _c, _r,_uid,_ext in zip(coordinates, radii,UID,EXT):
             timer = time.perf_counter()
-            with warnings.catch_warnings():
-                warnings.filterwarnings(action="ignore", module=".*")
-                try:
-                    output_table = cls._astroquery_obj.query_region(_c, radius=_r)
+            _exit_checker = False
+            while not _exit_checker:
+                _exit_checker = True
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(action="ignore", module=".*")
+                    try:
+                        output_table = cls._astroquery_obj.query_region(_c, radius=_r)
 
-                    if output_table is not None:
-                        o = output_table.to_pandas()
-                        o["UID"] = len(o) * [_uid]
-                        o["EXT"] = len(o) * [_ext]
-                        o["ERASS_RA"] = len(o) * [_c.ra.to_value('deg')]
-                        o["ERASS_DEC"] = len(o) * [_c.dec.to_value('deg')]
-                    else:
-                        o = pd.DataFrame({k: [] for k in list(cls.columns.keys()) + eras_columns})
+                        if output_table is not None:
+                            o = output_table.to_pandas()
+                            o["UID"] = len(o) * [_uid]
+                            o["EXT"] = len(o) * [_ext]
+                            o["ERASS_RA"] = len(o) * [_c.ra.to_value('deg')]
+                            o["ERASS_DEC"] = len(o) * [_c.dec.to_value('deg')]
+                        else:
+                            o = pd.DataFrame({k: [] for k in list(cls.columns.keys()) + eras_columns})
 
 
-                    result.append(o)
+                        result.append(o)
 
-                except Exception as exp:
-                    devLogger.error(exp.__str__())
-                    errors.append(exp)
+                    except Exception as exp:
+                        devLogger.error(exp.__str__())
+                        errors.append(exp)
 
-            while time.perf_counter() - timer < timeout:
-                time.sleep(timeout / 10)
+                while time.perf_counter() - timer < timeout:
+                    time.sleep(timeout / 10)
 
         # reconstructing the outputs.
         if len(result):

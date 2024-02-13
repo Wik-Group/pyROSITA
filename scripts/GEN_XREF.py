@@ -9,7 +9,7 @@ from pyROSITA.utils import mylog
 
 # --------------------------------------------------------------#
 # Settings
-database_directory = "/scratch/general/vast/u1281896/EROSITA/XREF_FEB"
+database_directory = "/home/ediggins/pyROSITA_test"
 catalog_path = os.path.join(database_directory, "eRASS1_Hard.v1.0.fits")
 first_n = None  # for debugging, only catalog the first N entries.
 databases = "all"  # NYI

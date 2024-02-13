@@ -18,7 +18,7 @@ system:
     developer:
       # ! The developer logger passes detailed logging messages to file
       enabled: true
-      output_directory: "/scratch/general/vast/u1281896/EROSITA/pyROSITA/dev" # You have to set this before the development logger will function.
+      output_directory: "/home/ediggins/pyROSITA_test/dev" # You have to set this before the development logger will function.
 
   display:
     # Display settings change how cluster_generator appears when in use.
