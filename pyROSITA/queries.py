@@ -6,6 +6,7 @@ from itertools import repeat
 
 import numpy as np
 import pandas as pd
+import requests.exceptions
 import sqlalchemy
 from astroquery.ipac.ned import Ned
 from astroquery.simbad import Simbad
@@ -13,6 +14,7 @@ from sqlalchemy import types as sql_type
 
 from pyROSITA.utils import EHalo, devLogger, mylog, split
 
+Simbad.add_votable_fields("otype")
 _dtypes = {
     "Object": sql_type.TEXT,
     "RA": sql_type.TEXT,
@@ -130,6 +132,7 @@ class Database:
         for _c, _r,_uid,_ext in zip(coordinates, radii,UID,EXT):
             timer = time.perf_counter()
             _exit_checker = False
+            _try_counts = 0
             while not _exit_checker:
                 _exit_checker = True
                 with warnings.catch_warnings():
@@ -148,6 +151,22 @@ class Database:
 
 
                         result.append(o)
+
+                    except requests.exceptions.HTTPError as exception:
+                        devLogger.error(exception.__str__())
+                        _try_counts += 1
+                        if _try_counts < 5:
+                            _exit_checker = False
+                        else:
+                            o = pd.DataFrame({k: [np.nan] for k in list(cls.columns.keys()) + eras_columns})
+                            o["UID"] = len(o) * [_uid]
+                            o["EXT"] = len(o) * [_ext]
+                            o["ERASS_RA"] = len(o) * [_c.ra.to_value('deg')]
+                            o["ERASS_DEC"] = len(o) * [_c.dec.to_value('deg')]
+                            o["Type"] = "ERROR"
+
+                            result.append(o)
+                            raise ValueError("Failed to get response after 5 tries.")
 
                     except Exception as exp:
                         devLogger.error(exp.__str__())
@@ -193,7 +212,7 @@ class Database:
 class NED(Database):
     _astroquery_obj = Ned  # The object reference for building astroquery calls.
     _timeout_req = 1  #
-    _max_threads_per_second = 15
+    _max_threads_per_second = 5
     name = "NED"
 
     columns = {"Object Name": "Object", "RA": "RA", "DEC": "DEC", "Type": "Type"}
@@ -212,7 +231,7 @@ class SIMBAD(Database):
     _max_threads_per_second = 5
     name = "SIMBAD"
 
-    columns = {"MAIN_ID": "Object", "RA": "RA", "DEC": "DEC"}
+    columns = {"MAIN_ID": "Object", "RA": "RA", "DEC": "DEC","OTYPE":"Type"}
 
     def __init__(self, *args, **kwargs):
         pass
@@ -229,7 +248,5 @@ if __name__ == "__main__":
     db = Database("SIMBAD")
 
     data = db.query_radius(
-        [SkyCoord(ra=0, dec=0, unit=(u.deg, u.deg))], [15 * u.arcmin]
+        [SkyCoord(ra=0, dec=0, unit=(u.deg, u.deg))], [15 * u.arcmin],["A"],["A"],maxworkers=1,maxgroup_size=1
     )
-    print(data.columns)
-    print(data)

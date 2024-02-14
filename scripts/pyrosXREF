@@ -17,12 +17,13 @@ CALLSIG=$1 # the base call signature.
 HEADER="\x1b[33;49m[\x1b[31;49mpyROS XREF\x1b[33;49m]\x1b[39;49m: "
 
 if [ "$CALLSIG" = "build" ]; then
-  pyrosXREF_build "${@:1}"
+  echo "${@:2}"
+  pyrosXREF_build "${@:2}"
 
 elif [ "$CALLSIG" = "add" ]; then
 
   if [ "$2" = "cat" ]; then
-    pyrosXREF_addcat "${@:1}"
+    pyrosXREF_addcat "${@:2}"
   else
     exit 1
   fi

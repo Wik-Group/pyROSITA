@@ -113,7 +113,7 @@ class eROSITACatalog:
         -------
 
         """
-        # calculating the sky radius to consider in arcseconds^2.
+        # calculating the sky radius to consider in arcmin^2.
         _ra_dec_error_radius = np.sqrt(
                 np.amax(np.abs([self.RA_LOWERR,self.RA_UPERR]), axis=0) ** 2
                 + (np.sin(np.deg2rad(self.DEC)) * np.amax(np.abs([self.DEC_LOWERR,self.DEC_UPERR]), axis=0)) ** 2)/(60)
@@ -123,7 +123,7 @@ class eROSITACatalog:
         else:
             error_radius = _ra_dec_error_radius
 
-        return error_radius
+        return error_radius *u.arcmin
 
     def _construct_coordinates(self):
         return [
@@ -180,7 +180,7 @@ class eROSITACatalog:
                     self._search_radii,
                     self.UID,
                     self.EXT,
-                    connection=_temp_engine,
+                    connection=db_path,
                     maxworkers=maxworkers,
                     maxgroup_size=maxgroup_size
                 )
@@ -193,13 +193,3 @@ class eROSITACatalog:
         eng = sql.create_engine(f"sqlite:///{database}")
         with eng.connect() as conn:
             self.data.to_sql("eROSITA",con=conn,if_exists='replace')
-
-
-
-
-if __name__ == "__main__":
-    database_directory = "/home/ediggins/pyROSITA_test"
-    catalog_path = os.path.join(database_directory, "eRASS1_Hard.v1.0.fits")
-
-    q = eROSITACatalog(catalog_path)
-    q._add_table_to_xref(os.path.join(database_directory,"XREF.db"))
