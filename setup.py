@@ -28,4 +28,5 @@ setup(
         "Topic :: Scientific/Engineering :: Visualization",
     ],
     include_package_data=True,
+    scripts=["scripts/pyrosXREF","scripts/pyrosXREF_build","scripts/pyrosXREF_addcat"]
 )

@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import sqlalchemy as sql
+from argparse import ArgumentParser
+from pyROSITA.erosita import eROSITACatalog
+
+parser = ArgumentParser
+parser.add_argument("database",help="the database file to append to.")
+parser.add_argument("catalog",help="The fits file to add to the XREF catalog.")
+
+args = parser.parse_args()
+
+q = eROSITACatalog(args.catalog)
+
+q._add_table_to_xref(args.database)

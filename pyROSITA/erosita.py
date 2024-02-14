@@ -68,8 +68,7 @@ class eROSITACatalog:
         # property backbones
         self._coordinates = None
 
-        error_radii = self.create_search_radii()
-        self.data["ERR_RAD"] = error_radii
+        self._search_radii = self.create_search_radii()
 
     def __str__(self):
         return f"<eROSITA Catalog @ {self.filename}>"
@@ -133,12 +132,13 @@ class eROSITACatalog:
         ]
 
 
-    def cross_reference(self, databases=None):
+    def cross_reference(self,db_path, databases=None,maxworkers=1,maxgroup_size=20):
         """
 
         Parameters
         ----------
-        search_locations
+        db_path
+        databases
 
         Returns
         -------
@@ -157,7 +157,7 @@ class eROSITACatalog:
 
             db = Database(database)
 
-            mylog.info(f"Generating table XREF_{database} in {self.db_file}.")
+            mylog.info(f"Generating table XREF_{database} in {db_path}.")
 
             meta_data = sql.MetaData()
             cols = [
@@ -171,18 +171,18 @@ class eROSITACatalog:
                 *cols,
             )
             devLogger.debug(f"Table XREF_{database} has {cols}.")
-            _temp_engine = sql.create_engine(f"sqlite:///{self.db_file}")
+            _temp_engine = sql.create_engine(f"sqlite:///{db_path}")
             meta_data.create_all(_temp_engine)
 
             outs.append(
                 db.query_radius(
                     self.coordinates,
-                    self._coord_radius(factor=1),
-                    self.uid,
-                    self.ext,
-                    connection=self.db_file,
-                    maxworkers=5,
-                    maxgroup_size=5
+                    self._search_radii,
+                    self.UID,
+                    self.EXT,
+                    connection=_temp_engine,
+                    maxworkers=maxworkers,
+                    maxgroup_size=maxgroup_size
                 )
             )
 
