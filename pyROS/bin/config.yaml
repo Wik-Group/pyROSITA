@@ -86,5 +86,5 @@ REFDB:
     retries: 5
     schema:
       <<: *REFDB_SCHEMA
-      "Object Type": ["Object", !sql "TEXT"]
-      Type:            ["Type", !sql "TEXT"]
+      MAIN_ID: ["Object", !sql "TEXT"]
+      OTYPE:   ["Type", !sql "TEXT"]

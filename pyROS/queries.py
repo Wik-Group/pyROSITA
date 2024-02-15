@@ -20,6 +20,7 @@ from tqdm.auto import tqdm
 from pyROS.utils import EHalo, devLogger, mylog, split,cgparams
 
 
+Simbad.add_votable_fields("otype")
 
 _included_erosita_columns = cgparams["REFDB"]['eRASS1_Catalog']['schema']
 _included_erosita_columns_mod = [v[0] for v in _included_erosita_columns.values()]
