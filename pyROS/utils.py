@@ -8,6 +8,8 @@ import sys
 import sqlalchemy as sql
 import yaml
 from unyt import unyt_array
+import functools
+import matplotlib.pyplot as plt
 
 # -- configuration directory -- #
 _config_directory = os.path.join(pt.Path(__file__).parents[0], "bin", "config.yaml")
@@ -126,6 +128,24 @@ class EHalo:
     def __exit__(self, exc_type, exc_value, exc_tb):
         pass
 
+def _enforce_style(func):
+    """Enforces the mpl style."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        _rcp_copy = plt.rcParams.copy()
+
+        for _k, _v in cgparams["plotting"]["defaults"].items():
+            plt.rcParams[_k] = _v
+
+        out = func(*args, **kwargs)
+
+        plt.rcParams = _rcp_copy
+        del _rcp_copy
+
+        return out
+
+    return wrapper
 
 def split(a, n):
     k, m = divmod(len(a), n)

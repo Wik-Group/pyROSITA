@@ -10,7 +10,7 @@ import requests
 from astropy.coordinates import SkyCoord
 
 from pyROS.queries import Database, _included_erosita_columns
-from pyROS.utils import EHalo, devLogger, mylog
+from pyROS.utils import EHalo, devLogger, mylog, _enforce_style
 from pyROS.erosita.sources import eRASS1Source
 
 _object_map = {
@@ -125,6 +125,10 @@ class eROSITACatalog:
         ) / (60)
 
         error_radius = np.amax([_ra_dec_error_radius, self.EXT / 60], axis=0)
+
+        #fixing nans
+        error_radius[np.where(np.isnan(error_radius))] = 1.0
+
         return error_radius * u.arcmin
 
     def _construct_coordinates(self):
@@ -218,6 +222,57 @@ class eROSITACatalog:
         with eng.connect() as conn:
             self.data.to_sql("eROSITA", con=conn, if_exists="replace")
 
+    @_enforce_style
+    def plot_field(self,field,ax=None,fig=None,y_scale="log",x_scale="linear",*args,**kwargs):
+        """
+                Plot a field vs radius from this model using Matplotlib.
+
+                Parameters
+                ----------
+                field : string
+                    The field to plot.
+                fig : Matplotlib Figure
+                    The figure to plot in. Default; None, in which case
+                    one will be generated.
+                ax : Matplotlib Axes
+                    The axes to plot in. Default: None, in which case
+                    one will be generated.
+                y_scale: str
+                    The scaling on the y-axis.
+                x_scale: str
+                    The scaling on the x-axis.
+                Returns
+                -------
+                The Figure, Axes tuple used for the plot.
+
+                """
+        import matplotlib.pyplot as plt
+
+        if fig is None:
+            fig = plt.figure(figsize=(10, 10))
+        if ax is None:
+            ax = fig.add_subplot(111)
+
+        ax.hist(getattr(self,field),*args,**kwargs)
+        ax.set_yscale(y_scale)
+        ax.set_xscale(x_scale)
+
+        ax.set_ylabel(
+            "Catalog Source Count / [N]"
+        )
+
+        ax.set_xlabel(
+            f"{field}"
+        )
+
+        return fig, ax
+
+
 if __name__ == '__main__':
     cat = eROSITACatalog("/home/ediggins/pyROSITA_test/eRASS1_Hard.v1.0.fits")
-    print(cat.xref("/home/ediggins/pyROSITA_test/XREF.db",overwrite=True,maxthreads=1))
+    import matplotlib.pyplot as plt
+    q = cat._xref_radii()
+    print(q[np.where(np.isnan(q))])
+    plt.hist(q)
+    plt.yscale('log')
+    plt.show()
