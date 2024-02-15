@@ -5,7 +5,7 @@ import logging
 import os
 import pathlib as pt
 import sys
-
+import sqlalchemy as sql
 import yaml
 from unyt import unyt_array
 
@@ -20,6 +20,8 @@ def _yaml_unit_constructor(loader: yaml.FullLoader, node: yaml.nodes.MappingNode
     del kw["input_scalar"]
     return unyt_array(i_s, **kw)
 
+def _yaml_sql_type_constructor(loader: yaml.FullLoader, node: yaml.nodes.ScalarNode):
+    return getattr(sql.types,loader.construct_scalar(node))
 
 def _yaml_lambda_loader(loader: yaml.FullLoader, node: yaml.nodes.ScalarNode):
     return eval(loader.construct_scalar(node))
@@ -29,6 +31,7 @@ def _get_loader():
     loader = yaml.FullLoader
     loader.add_constructor("!unyt", _yaml_unit_constructor)
     loader.add_constructor("!lambda", _yaml_lambda_loader)
+    loader.add_constructor("!sql",_yaml_sql_type_constructor)
     return loader
 
 
@@ -51,7 +54,7 @@ stream = (
     if cgparams["system"]["logging"]["main"]["stream"] in ["STDOUT", "stdout"]
     else sys.stderr
 )
-cgLogger = logging.getLogger("pyROSITA")
+cgLogger = logging.getLogger("pyROS")
 
 cg_sh = logging.StreamHandler(stream=stream)
 
@@ -104,7 +107,7 @@ else:
 class EHalo:
     def __new__(cls, *args, **kwargs):
         if "text" in kwargs:
-            kwargs["text"] = "[pyROSITA] " + kwargs["text"]
+            kwargs["text"] = "[pyROS] " + kwargs["text"]
         kwargs["stream"] = sys.stderr
 
         try:
@@ -127,3 +130,5 @@ class EHalo:
 def split(a, n):
     k, m = divmod(len(a), n)
     return [a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n)]
+
+print(cgparams)

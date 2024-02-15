@@ -1,58 +1,27 @@
 #!/usr/bin/env python
 
-# ==============================================================#
-# Generates the XREF database from NED references               #
-# ==============================================================#
+# ==================================================================================================================== #
+# Generate the XREF database for a given catalog.                                                                      #
+# ==================================================================================================================== #
 import os
 import pathlib as pt
-
-from pyROSITA.erosita import eROSITACatalog
-from pyROSITA.utils import mylog
 from argparse import ArgumentParser
-from pyROSITA.erosita import download_data_product
-# --------------------------------------------------------------#
-# Getting user settings
+from pyROS.utils import mylog
+from pyROS.erosita.catalogs import eROSITACatalog
+
 parser = ArgumentParser()
-parser.add_argument("database_directory",type=str,help="The directory of the database file.")
-parser.add_argument("catalog_directory",type=str,help="The directory of the catalog")
-parser.add_argument("-f","--files",nargs="+",help="The catalog file.",default=None)
-parser.add_argument("-n","--nobjs",type=int,help="Maximum number of objects to create XREFs for.",default=None)
-parser.add_argument("-d","--databases",nargs="+",default="all",help="Databases to include. [NED, SIMBAD]")
-parser.add_argument("--group_size",type=int,help="Max group size",default=20)
-parser.add_argument("--nthreads",type=int,help="Number of threads",default=1)
-parser.add_argument("--urls",nargs="+",help="URLs to download.",default=[])
+parser.add_argument("database_path", type=str, help="The path at which to generate the database file.")
+parser.add_argument("catalog_path",type=str ,help="The path to the valid catalog.")
+parser.add_argument("-n","--number",type=int, help="The number of objects in the catalog to XREF.")
+parser.add_argument("-d","--databases",default="all",nargs="+",help="The databases to XREF against.")
+parser.add_argument("--group_size", type=int, help="Max group size", default=20)
+parser.add_argument("--nthreads", type=int, help="Number of threads", default=1)
+parser.add_argument("--catalog_type",type=str,help="The catalog format",default="eRASS1")
+parser.add_argument("-o","--overwrite",action="store_true")
+args = parser.parse_args()
 
-
-_args = parser.parse_args()
-
-if _args.databases == "all":
-    databases = ["NED","SIMBAD"]
-else:
-    databases = _args.databases
-
-# --------------------------------------------------------------#
 # Setup
-if not os.path.exists(_args.database_directory):
-    mylog.info(f"{_args.database_directory} doesn't currently exist. Creating it.")
-    pt.Path(_args.database_directory).mkdir(parents=True)
+#------#
+catalog = eROSITACatalog(args.catalog_path,format="fits",catalog_type=args.catalog_type)
 
-for url in _args.urls:
-    download_data_product(
-        url,
-        _args.database_directory,
-    )
-
-if _args.files is None:
-    _args.files = [file for file in os.listdir(_args.catalog_directory) if ".fits" in file]
-    assert len(_args.files), "No catalogs found"
-else:
-    pass
-
-for file in _args.files:
-    catalog_path = os.path.join(_args.catalog_directory, file)
-    q = eROSITACatalog(catalog_path)
-
-    if _args.nobjs is not None:
-        q.data = q.data.iloc[:_args.nobjs]
-
-    q.cross_reference(databases=databases,db_path=os.path.join(_args.database_directory,"XREF.db"),maxworkers=_args.nthreads,maxgroup_size=_args.group_size)
+catalog.xref(args.database_path,groupsize=args.group_size,maxthreads=args.nthreads,included_databases=args.databases,overwrite=args.overwrite)

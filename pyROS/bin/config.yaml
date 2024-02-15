@@ -17,14 +17,13 @@ system:
       stream: "STDERR" # Can be STDERR or STDOUT.
     developer:
       # ! The developer logger passes detailed logging messages to file
-      enabled: true
-      output_directory: "/home/ediggins/pyROSITA_test/dev" # You have to set this before the development logger will function.
+      enabled: false
+      output_directory: "" # You have to set this before the development logger will function.
 
   display:
     # Display settings change how cluster_generator appears when in use.
     spinners: true # [WARNING] Requires Halo to be installed.
     progress_bars: true
-
 plotting:
   # These are options for any of the default plots generated in cluster generator.
   defaults:
@@ -37,3 +36,55 @@ plotting:
     ytick.minor.size: 5
     xtick.direction: "in"
     ytick.direction: "in"
+
+#======================================================================================================================#
+# eROSITA Processing settings                                                                                          #
+#======================================================================================================================#
+XREF:
+  # -- Cross Referencing settings -- #
+  output_schema:
+    # The schema for the cross referencing database.
+    RA:        !sql "TEXT"
+    DEC:       !sql "TEXT"
+    Type:      !sql "TEXT"
+    Object:    !sql "TEXT"
+    ERA:       !sql "TEXT"
+    EDEC:      !sql "TEXT"
+    UID:       !sql "BIGINT"
+    DISTANCE:  !sql "FLOAT"
+
+REFDB:
+  # -- Settings for reference databases -- #
+  generic:
+    max_call_frequency: 10 # number of allowed calls / sec
+    max_threads: 8         # maximum number of allowed threads.
+    retries: 5             # number of times to retry on timeout.
+    schema: &REFDB_SCHEMA
+      RA:         ["RA", !sql "TEXT"]
+      DEC:       ["DEC", !sql "TEXT"]
+
+
+  eRASS1_Catalog:
+    schema: &ERASS1_SCHEMA
+      RA:        ["ERA", !sql "TEXT"]
+      DEC:      ["EDEC", !sql "TEXT"]
+      UID:       ["UID", !sql "BIGINT"]
+
+  NED:
+    max_call_frequency: 5
+    max_threads: 8
+    retries: 5
+    schema:
+      <<: *REFDB_SCHEMA
+      "Object Name": ["Object", !sql "TEXT"]
+      Type:            ["Type", !sql "TEXT"]
+
+
+  SIMBAD:
+    max_call_frequency: 5
+    max_threads: 8
+    retries: 5
+    schema:
+      <<: *REFDB_SCHEMA
+      "Object Type": ["Object", !sql "TEXT"]
+      Type:            ["Type", !sql "TEXT"]

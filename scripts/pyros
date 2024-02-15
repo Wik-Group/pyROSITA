@@ -1,0 +1,78 @@
+#!/usr/bin/bash
+echo -e "\x1b[31;1m                     _______          \x1b[33;1m _______  _______  _______                     \x1b[0m"
+echo -e "\x1b[31;1m                    (  ____ )|\     /|\x1b[33;1m(  ____ )(  ___  )(  ____ \                    \x1b[0m"
+echo -e "\x1b[31;1m                    | (    )|( \   / )\x1b[33;1m| (    )|| (   ) || (    \/                    \x1b[0m"
+echo -e "\x1b[31;1m                    | (____)| \ (_) / \x1b[33;1m| (____)|| |   | || (_____                     \x1b[0m"
+echo -e "\x1b[31;1m                    |  _____)  \   /  \x1b[33;1m|     __)| |   | |(_____  )                    \x1b[0m"
+echo -e "\x1b[31;1m                    | (         ) (   \x1b[33;1m| (\ (   | |   | |      ) |                    \x1b[0m"
+echo -e "\x1b[31;1m                    | )         | |   \x1b[33;1m| ) \ \__| (___) |/\____) |                    \x1b[0m"
+echo -e "\x1b[31;1m                    |/          \_/   \x1b[33;1m|/   \__/(_______)\_______)                    \x1b[0m"
+echo -e "\x1b[31;1m                                                                                               \x1b[0m"
+echo -e "\x1b[31;1m               #######################################################                         \x1b[0m"
+echo -e "\x1b[31;1m                    eROSITA X-RAY analysis / X Matching Software                               \x1b[0m"
+echo -e "\x1b[31;1m                                                                                               \x1b[0m"
+echo -e "\x1b[31;1m               Written by: Eliza C. Diggins                                                    \x1b[0m"
+echo -e "\x1b[31;1m                  University of Utah, Dept. of Physics and Astronomy                           \x1b[0m"
+echo -e "\x1b[31;1m                                                                                               \x1b[0m"
+echo -e "\x1b[31;1m                                                                                               \x1b[0m"
+CALLSIG=$1 # the base call signature.
+HEADER="\x1b[33;49m[\x1b[31;49mpyROS\x1b[33;49m]\x1b[39;49m: "
+
+if [ "$CALLSIG" = "XREF" ]; then
+  pyrosXREF "${@:2}"
+
+elif [ "$CALLSIG" = "config" ]; then
+
+  #-----------------------------------------------------------#
+  # CONFIGURATION SETTINGS COMMAND SYSTEM                     #
+  #-----------------------------------------------------------#
+  CONFIG_COMMAND=$2
+  CONFIG_SETTING=$3
+  CONFIG_VAR=$4
+
+  # CHECK FOR PYROS INSTALLATION
+  if [ "$(pip show pyROS)" = "" ]; then
+    echo -e "$HEADER: [\x1b[31mERROR\x1b[39;49m] pip indicates no pyROS installation."
+    exit 1
+  fi
+
+
+  INSTALL=$(pip show pyTNG | grep 'Location:' | sed 's|Location: ||')
+  CONFIG="$INSTALL/pyROS/bin/config.yaml"
+  echo -e "$HEADER: pyROS installation detected at $INSTALL."
+  echo -e "$HEADER: Expecting to find config.yaml at $CONFIG."
+
+  # CHECK EXISTENCE OF CONFIG FILE
+  if [ -f "$CONFIG" ]; then
+    echo -e "$HEADER: FOUND config.yaml at $CONFIG. Proceeding."
+  else
+    echo -e "$HEADER: [\x1b[31mERROR\x1b[39;49m] config.yaml at $CONFIG wasn't found."
+    exit 1
+  fi
+
+  echo -e "$HEADER: Config path: $CONFIG"
+
+  if [ "$CONFIG_COMMAND" == "set" ]; then
+    echo -e "$HEADER: Setting $CONFIG_SETTING for to \x1b[31m$CONFIG_VAR\x1b[39m."
+
+
+    sed -i -E "s|(  $CONFIG_SETTING: )\"([^\"]*)\"(.*)|\1\"$CONFIG_VAR\"\3|g" $CONFIG
+
+    echo -e "$HEADER: \x1b[32;49m$CONFIG_SETTING successfully set to \x1b[36;49m$CONFIG_VAR\x1b[39;49m."
+
+  elif [ "$CONFIG_COMMAND" == "get" ]; then
+
+    grep -E "$CONFIG_SETTING: )\"([^\"]*)\"(.*)" "$CONFIG"
+
+  else
+        echo -e "$HEADER: [\x1b[31mERROR\x1b[39;49m] $CONFIG_COMMAND is not recognized."
+    exit 1
+  fi
+
+elif [ "$CALLSIG" = "" ]; then
+    echo -e "$HEADER [\x1b[35mERROR\x1b[0m] pyros must be followed by a valid command."
+
+else
+  echo -e "$HEADER [\x1b[35mERROR\x1b[0m] $CALLSIG is not a valid command."
+  exit 1
+fi

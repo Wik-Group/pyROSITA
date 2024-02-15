@@ -1,18 +1,4 @@
 #!/usr/bin/bash
-echo -e "\x1b[31;49m                    ______ _____ _____   \x1b[0m"
-echo -e "\x1b[31;49m                    | ___ \  _  /  ___|  \x1b[0m"
-echo -e "\x1b[31;49m         _ __  _   _| |_/ / | | \ \`--.  \x1b[0m"
-echo -e "\x1b[31;49m        | '_ \| | | |    /| | | |\`--. \ \x1b[0m"
-echo -e "\x1b[31;49m        | |_) | |_| | |\ \\ \_/ /\__/  / \x1b[0m"
-echo -e "\x1b[31;49m        | .__/ \__, \_| \_|\___/\____/   \x1b[0m"
-echo -e "\x1b[31;49m        | |     __/ |                    \x1b[0m"
-echo -e "\x1b[31;49m        |_|    |___/                     \x1b[0m"
-echo -e "\x1b[31;49m                                         \x1b[0m"
-echo -e "\x1b[31;49m        eROSITA X-Ray Analysis Package   \x1b[0m"
-echo -e "\x1b[33m############################################\x1b[0m"
-echo -e "\x1b[31;49mWritten by: Eliza Diggins                \x1b[0m"
-echo -e "\x1b[33m############################################\x1b[0m"
-
 CALLSIG=$1 # the base call signature.
 HEADER="\x1b[33;49m[\x1b[31;49mpyROS XREF\x1b[33;49m]\x1b[39;49m: "
 
@@ -27,6 +13,9 @@ elif [ "$CALLSIG" = "add" ]; then
   else
     exit 1
   fi
+
+elif [ "$CALLSIG" = "" ]; then
+  echo -e "$HEADER [\x1b[35mERROR\x1b[0m] pyrosXREF must be followed by a valid command."
 
 else
   echo -e "$HEADER [\x1b[35mERROR\x1b[0m] $CALLSIG is not a valid command."

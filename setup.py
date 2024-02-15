@@ -2,14 +2,14 @@
 from setuptools import setup
 
 setup(
-    name="pyROSITA",
-    packages=["pyROSITA"],
+    name="pyROS",
+    packages=["pyROS"],
     version="0.1.0",
     description="",
     author="Eliza C. Diggins",
     author_email="eliza.diggins@utah.edu",
-    url="https://github.com/Wik-Group/pyROSITA",
-    download_url="https://github.com/Wik-Group/pyROSITA/tarball/0.1.0",
+    url="https://github.com/Wik-Group/pyROS",
+    download_url="https://github.com/Wik-Group/pyROS/tarball/0.1.0",
     install_requires=[
         "numpy",
         "scipy",
@@ -28,5 +28,10 @@ setup(
         "Topic :: Scientific/Engineering :: Visualization",
     ],
     include_package_data=True,
-    scripts=["scripts/pyrosXREF","scripts/pyrosXREF_build","scripts/pyrosXREF_addcat"]
+    scripts=[
+        "scripts/pyros"
+        "scripts/pyrosXREF",
+        "scripts/pyrosXREF_build",
+        "scripts/pyrosXREF_addcat",
+    ],
 )
