@@ -37,7 +37,7 @@ elif [ "$CALLSIG" = "config" ]; then
   fi
 
 
-  INSTALL=$(pip show pyTNG | grep 'Location:' | sed 's|Location: ||')
+  INSTALL=$(pip show pyROS | grep 'Location:' | sed 's|Location: ||')
   CONFIG="$INSTALL/pyROS/bin/config.yaml"
   echo -e "$HEADER: pyROS installation detected at $INSTALL."
   echo -e "$HEADER: Expecting to find config.yaml at $CONFIG."
@@ -56,13 +56,14 @@ elif [ "$CALLSIG" = "config" ]; then
     echo -e "$HEADER: Setting $CONFIG_SETTING for to \x1b[31m$CONFIG_VAR\x1b[39m."
 
 
-    sed -i -E "s|(  $CONFIG_SETTING: )\"([^\"]*)\"(.*)|\1\"$CONFIG_VAR\"\3|g" $CONFIG
+    sed -i -E "s|(.*)($CONFIG_SETTING: )([^\#]*)(.*)|\1\2$CONFIG_VAR\4|g" $CONFIG
 
     echo -e "$HEADER: \x1b[32;49m$CONFIG_SETTING successfully set to \x1b[36;49m$CONFIG_VAR\x1b[39;49m."
 
   elif [ "$CONFIG_COMMAND" == "get" ]; then
+    echo -e "$HEADER: Searching config for $CONFIG_SETTING."
 
-    grep -E "$CONFIG_SETTING: )\"([^\"]*)\"(.*)" "$CONFIG"
+    grep -E "$CONFIG_SETTING" "$CONFIG"
 
   else
         echo -e "$HEADER: [\x1b[31mERROR\x1b[39;49m] $CONFIG_COMMAND is not recognized."

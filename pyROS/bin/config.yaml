@@ -22,7 +22,7 @@ system:
 
   display:
     # Display settings change how cluster_generator appears when in use.
-    spinners: true # [WARNING] Requires Halo to be installed.
+    spinners: true# [WARNING] Requires Halo to be installed.
     progress_bars: true
 plotting:
   # These are options for any of the default plots generated in cluster generator.

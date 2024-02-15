@@ -29,7 +29,7 @@ setup(
     ],
     include_package_data=True,
     scripts=[
-        "scripts/pyros"
+        "scripts/pyros",
         "scripts/pyrosXREF",
         "scripts/pyrosXREF_build",
         "scripts/pyrosXREF_addcat",
