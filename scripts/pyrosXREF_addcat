@@ -8,7 +8,7 @@ import sqlalchemy as sql
 from argparse import ArgumentParser
 from pyROS.erosita.catalogs import eROSITACatalog
 
-parser = ArgumentParser
+parser = ArgumentParser()
 parser.add_argument("database",help="the database file to append to.")
 parser.add_argument("catalog",help="The fits file to add to the XREF catalog.")
 
