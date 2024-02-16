@@ -276,4 +276,10 @@ class eROSITACatalog:
 
 if __name__ == "__main__":
     cat = eROSITACatalog("/home/ediggins/pyROSITA_test/eRASS1_Hard.v1.0.fits")
-    cat.xref("./xref.db", groupsize=5, maxthreads=1, overwrite=True)
+    cat.xref(
+        "./xref.db",
+        groupsize=5,
+        maxthreads=1,
+        overwrite=True,
+        included_databases=["SIMBAD"],
+    )

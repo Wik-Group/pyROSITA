@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import requests.exceptions
 import sqlalchemy
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import Angle, SkyCoord
 from astroquery.ipac.ned import Ned
 from astroquery.simbad import Simbad
 from tqdm.auto import tqdm
@@ -204,6 +204,7 @@ class Database:
             output_dataframe = output_dataframe.loc[
                 :, list(cls.used_columns.keys()) + _included_erosita_columns_mod
             ]
+            output_dataframe = cls._reformat_table_columns(output_dataframe)
             output_dataframe["DELTA"] = np.sqrt(
                 (output_dataframe["RA"] - output_dataframe["ERA"]) ** 2
                 + (output_dataframe["DEC"] - output_dataframe["EDEC"]) ** 2
@@ -237,6 +238,10 @@ class Database:
             progress_bar.update(n=len(coordinates))
 
         return _thread_error_array
+
+    @classmethod
+    def _reformat_table_columns(cls, table):
+        return table
 
 
 class NED(Database):
@@ -281,3 +286,9 @@ class SIMBAD(Database):
     def __new__(cls, *args, **kwargs):
         obj = object.__new__(cls)
         return obj
+
+    @classmethod
+    def _reformat_table_columns(cls, table):
+        table["DEC"] = [Angle(k + " degrees").to_value("deg") for k in table["DEC"]]
+        table["RA"] = [Angle(k + " hours").to_value("deg") for k in table["RA"]]
+        return table
