@@ -9,13 +9,12 @@ import numpy as np
 import requests
 from astropy.coordinates import SkyCoord
 
-from pyROS.queries import Database, _included_erosita_columns
-from pyROS.utils import EHalo, devLogger, mylog, _enforce_style
 from pyROS.erosita.sources import eRASS1Source
+from pyROS.queries import Database, _included_erosita_columns
+from pyROS.utils import EHalo, _enforce_style, mylog
 
-_object_map = {
-    "eRASS1":eRASS1Source
-}
+_object_map = {"eRASS1": eRASS1Source}
+
 
 def download_data_product(url, output_location):
     """
@@ -78,7 +77,6 @@ class eROSITACatalog:
         # Loading the source type object
         self.source_type = _object_map[catalog_type]
 
-
     def __str__(self):
         return f"<eROSITA Catalog @ {self.filename}>"
 
@@ -108,9 +106,7 @@ class eROSITACatalog:
 
         return self._coordinates
 
-    def _xref_radii(
-        self
-    ):
+    def _xref_radii(self):
         """
         Calculates matched XREF radii for passing through the XREF generation procedures.
         """
@@ -124,9 +120,9 @@ class eROSITACatalog:
             ** 2
         ) / (60)
 
-        error_radius = np.amax([_ra_dec_error_radius, self.EXT / 60], axis=0)
+        error_radius = 3 * _ra_dec_error_radius + (self.EXT / 60)
 
-        #fixing nans
+        # fixing nans
         error_radius[np.where(np.isnan(error_radius))] = 1.0
 
         return error_radius * u.arcmin
@@ -136,6 +132,7 @@ class eROSITACatalog:
             SkyCoord(ra=kra * u.deg, dec=kdec * u.deg)
             for kra, kdec in zip(self.data.iloc[:]["RA"], self.data.iloc[:]["DEC"])
         ]
+
     def __getattr__(self, item):
         if hasattr(super(), item):
             return super().__getattribute__(self, item)
@@ -144,7 +141,15 @@ class eROSITACatalog:
         else:
             raise AttributeError(f"No such attribute {item}.")
 
-    def xref(self, filename, groupsize=20, maxthreads=10, included_databases="all",overwrite=False,**kwargs):
+    def xref(
+        self,
+        filename,
+        groupsize=20,
+        maxthreads=10,
+        included_databases="all",
+        overwrite=False,
+        **kwargs,
+    ):
         """
 
         Parameters
@@ -159,11 +164,12 @@ class eROSITACatalog:
 
         """
         import sqlalchemy as sql
+
         mylog.info(f"Generating XREF database for {len(self)} eROSITA records.")
 
         # Managing IO
-        #------------#
-        if included_databases == 'all':
+        # ------------#
+        if included_databases == "all":
             databases = [k.__name__ for k in Database.__subclasses__()]
         else:
             databases = included_databases
@@ -171,16 +177,20 @@ class eROSITACatalog:
         if os.path.exists(filename):
             # the database file already exists; we are going to delete it.
             if overwrite:
-                mylog.info(f"Found existing XREF database at {filename}. Overwrite={overwrite}.")
+                mylog.info(
+                    f"Found existing XREF database at {filename}. Overwrite={overwrite}."
+                )
                 os.remove(filename)
             else:
-                raise ValueError(f"Found existing XREF database at {filename}. Overwrite={overwrite}.")
+                raise ValueError(
+                    f"Found existing XREF database at {filename}. Overwrite={overwrite}."
+                )
         else:
             # generate the necessary pathway.
-            pt.Path(filename).parents[0].mkdir(parents=True,exist_ok=True)
+            pt.Path(filename).parents[0].mkdir(parents=True, exist_ok=True)
 
         # Loop over DB
-        #-------------#
+        # -------------#
         for database in databases:
             mylog.info(f"Generating XREF for [{database}]...")
 
@@ -188,31 +198,29 @@ class eROSITACatalog:
             db = Database(database)
 
             # Creating table in database
-            #---------------------------#
+            # ---------------------------#
             _db_meta_data = sql.MetaData()
             cols = [
-                sql.Column(k,v) for k,v in {
-                            ** {v[0]:v[1] for k,v in db.used_columns.items()},
-                            ** {v[0]:v[1] for k,v in _included_erosita_columns.items()}
-                        }.items()
+                sql.Column(k, v)
+                for k, v in {
+                    **{v[0]: v[1] for k, v in db.used_columns.items()},
+                    **{v[0]: v[1] for k, v in _included_erosita_columns.items()},
+                    "DELTA": sql.FLOAT,
+                }.items()
             ]
-            _ = sql.Table(
-                f"XREF_{db.__class__.__name__}",
-                _db_meta_data,
-                *cols
-            )
+            _ = sql.Table(f"XREF_{db.__class__.__name__}", _db_meta_data, *cols)
             _temp_engine = sql.create_engine(f"sqlite:///{filename}")
             _db_meta_data.create_all(_temp_engine)
 
             # Cross Referencing
-            #------------------#
+            # ------------------#
 
             db.query_radius(
                 self.source_objects,
                 self._xref_radii(),
                 maxworkers=maxthreads,
                 group_size=groupsize,
-                connection=filename
+                connection=filename,
             )
 
     def _add_table_to_xref(self, database):
@@ -223,29 +231,31 @@ class eROSITACatalog:
             self.data.to_sql("eROSITA", con=conn, if_exists="replace")
 
     @_enforce_style
-    def plot_field(self,field,ax=None,fig=None,y_scale="log",x_scale="linear",*args,**kwargs):
+    def plot_field(
+        self, field, ax=None, fig=None, y_scale="log", x_scale="linear", *args, **kwargs
+    ):
         """
-                Plot a field vs radius from this model using Matplotlib.
+        Plot a field vs radius from this model using Matplotlib.
 
-                Parameters
-                ----------
-                field : string
-                    The field to plot.
-                fig : Matplotlib Figure
-                    The figure to plot in. Default; None, in which case
-                    one will be generated.
-                ax : Matplotlib Axes
-                    The axes to plot in. Default: None, in which case
-                    one will be generated.
-                y_scale: str
-                    The scaling on the y-axis.
-                x_scale: str
-                    The scaling on the x-axis.
-                Returns
-                -------
-                The Figure, Axes tuple used for the plot.
+        Parameters
+        ----------
+        field : string
+            The field to plot.
+        fig : Matplotlib Figure
+            The figure to plot in. Default; None, in which case
+            one will be generated.
+        ax : Matplotlib Axes
+            The axes to plot in. Default: None, in which case
+            one will be generated.
+        y_scale: str
+            The scaling on the y-axis.
+        x_scale: str
+            The scaling on the x-axis.
+        Returns
+        -------
+        The Figure, Axes tuple used for the plot.
 
-                """
+        """
         import matplotlib.pyplot as plt
 
         if fig is None:
@@ -253,26 +263,17 @@ class eROSITACatalog:
         if ax is None:
             ax = fig.add_subplot(111)
 
-        ax.hist(getattr(self,field),*args,**kwargs)
+        ax.hist(getattr(self, field), *args, **kwargs)
         ax.set_yscale(y_scale)
         ax.set_xscale(x_scale)
 
-        ax.set_ylabel(
-            "Catalog Source Count / [N]"
-        )
+        ax.set_ylabel("Catalog Source Count / [N]")
 
-        ax.set_xlabel(
-            f"{field}"
-        )
+        ax.set_xlabel(f"{field}")
 
         return fig, ax
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cat = eROSITACatalog("/home/ediggins/pyROSITA_test/eRASS1_Hard.v1.0.fits")
-    import matplotlib.pyplot as plt
-    q = cat._xref_radii()
-    print(q[np.where(np.isnan(q))])
-    plt.hist(q)
-    plt.yscale('log')
-    plt.show()
+    cat.xref("./xref.db", groupsize=5, maxthreads=1, overwrite=True)
