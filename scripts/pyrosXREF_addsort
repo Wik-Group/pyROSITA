@@ -1,0 +1,49 @@
+#!/usr/bin/bash
+
+# ==================================================================================================================== #
+# Generate sort XREF catalog                                                                                           #
+# ==================================================================================================================== #
+BUILD_SCRIPTS=("build_AGN.sql" "build_clusters.sql" "build_exotic.sql" "build_SNR.sql")
+
+DATABASE="$1"
+HEADER="\x1b[33;49m[\x1b[31;49mpyROS XREF\x1b[33;49m]\x1b[39;49m: "
+
+#-- Searching for critical installation information --#
+INSTALL=$(pip show pyROS | grep 'Location:' | sed 's|Location: ||')
+SCRIPTS="$INSTALL/scripts/sql"
+
+echo -e "$HEADER: pyROS installation detected at $INSTALL."
+echo -e "$HEADER: Expecting to find scripts at $SCRIPTS."
+
+if [ ! -d $SCRIPTS ]; then
+    echo -e "$HEADER [\x1b[35mERROR\x1b[0m] Expected scripts at $SCRIPTS, but none where found. Have you altered your installation environment?"
+    exit 1
+fi
+
+echo -e "$HEADER sorting X-matching results from $DATABASE"
+
+#-- Make sure the database actually exists --#
+if [ ! -f $DATABASE ]; then
+    echo -e "$HEADER [\x1b[35mERROR\x1b[0m] the database [$DATABASE] couldn't be found. Check the path."
+    exit 1
+fi
+
+#-- Execute the correct SQL --#
+for script in "${BUILD_SCRIPTS[@]}"; do
+  echo -e "$HEADER [Running $script on $DATABASE]..."
+  sqlite3 "$DATABASE" < "$SCRIPTS/$script"
+
+  # Check the result for fidelity
+  if [ "$?" != 0 ]; then
+    echo -e "$HEADER [\x1b[35mERROR\x1b[0m] Process failed to run $script at $SCRIPTS/$script."
+    exit 1
+  else
+    echo -e "$HEADER DONE"
+  fi
+  done
+
+#-- executing count matches -- #
+echo -e "$HEADER [Running count_matches.sql on $DATABASE]"
+sqlite3 "$DATABASE" < "$SCRIPTS/count_matches.sql"
+echo -e "$HEADER Sorting complete."
+exit 0

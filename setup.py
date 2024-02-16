@@ -33,5 +33,6 @@ setup(
         "scripts/pyrosXREF",
         "scripts/pyrosXREF_build",
         "scripts/pyrosXREF_addcat",
+        "scripts/pyrosXREF_addsort",
     ],
 )

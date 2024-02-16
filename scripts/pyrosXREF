@@ -9,7 +9,11 @@ if [ "$CALLSIG" = "build" ]; then
 elif [ "$CALLSIG" = "add" ]; then
 
   if [ "$2" = "cat" ]; then
-    pyrosXREF_addcat "${@:2}"
+    pyrosXREF_addcat "${@:3}"
+
+  elif [ "$2" = "sort" ]; then
+    pyrosXREF_addsort "${@:3}"
+
   else
     exit 1
   fi
