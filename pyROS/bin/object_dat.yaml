@@ -1,0 +1,60 @@
+#----------------------------------------------------------------------------------------------------------------------#
+# pyROS matching guide objects.
+#
+#
+#----------------------------------------------------------------------------------------------------------------------#
+object_reference_table:
+  #
+  # The object reference table categorizes groups into X-ray significant groups.
+  #
+  NED:
+    # NED specific groups
+   "star": ["Star","**","*Ass","*Cl","AbLS","Blue*","C*", "exG*","Flare*","Red*","Variable*","WolfRayet*","!*","!**","!*Ass","!*Cl","!Blue*","!C*","!Flar*","!Red*","!V*","!WR*"]
+   "emission_object": ["EmLS","EmObj","HIIReg","GammaS","IrS","MCld","Neb","PlanetaryNeb","RadioS","RfN","UvES","UvS","VisS","XrayS","!EmObj","!HII","!MCld","!Neb","!PN","!RfN"]
+   "galaxy": ["Galaxy","G_Lens","PofG"]
+   "galaxy_group": ["GGroup","GPair","GTrpl"]
+   "galaxy_cluster": ["GClstr"]
+   "other": ["Other",""]
+   "exotic": ["Pulsar","WhiteDwarf","!Psr","!WD*"]
+   "nova": ["Nova","SN","SNRemnant","!Nova","!SN","!SNR"]
+   "AGN": ["QSO","Q_Lens"]
+   "extended_AGN": ["QGroup"]
+  SIMBAD:
+    # SIMBAD specific groups
+   "star": ['Ma*','bCepV*','Supergiant','RedSG','YellowSG','BlueSG','WolfRayet*','YSO','OrionV*','TTauri*','Ae*','Outflow','HerbigHaroObj','MS*','Be*','BlueStraggler','SXPheV*','gammaDorV*','delSctV*','Ev*','RGB*','HotSubdwarf','HorBranch*','RRLyrae','Type2Cep','Cepheid','ClassicalCep','C*',
+            'S*','LongPeriodV*','AGB*','Mira','OH/IR*','post-AGB*','RVTauV*','ChemPec*','alf2CVnV*','RCrBV*','**','EllipVar','EclBin','SB*','BYDraV*','RSCVnV*','Symbiotic*','Low-Mass*','BrownD*','Planet','AVS','Variable*','IrregularV*','RCrBV*','RSCVnV*','CataclyV*','Nova','Eruptive*','alf2CVnV*','EllipVar',
+            'BYDraV*','RotV*','bCepV*','SXPheV*','gammaDorV*','delSctV*','RRLyrae','Type2Cep','Cepheid','ClassicalCep','PulsV*','EmLine*',"HighPM*","HighVel*",'Cluster*','GlobCluster','OpenCluster','Association','Stream','MouvGroup',
+            # ?'s class types.
+            'Ma?','bC?','SG*_Candidate','RSG*_Candidate','YSG*_Candidate','BSG*_Candidate','WR*_Candidate','YSO_Candidate','Or?','TTau*_Candidate','Ae*_Candidate','outflow_Candidate','HH?','MS?','Be*_Candidate','BSS_Candidate','SX?','gD?','dS?','Ev?','RGB*_Candidate','Hsd_Candidate','HB*_Candidate','RRLyr_Candidate','WV?','Cepheid_Candidate','cC?','C*_Candidate',
+            'S*_Candidate','LP*_Candidate','AGB*_Candidate','Mi*_Candidate','OH_Candidate','post-AGB*_Candidate','RV?','Pe?','a2?','RCrB_Candidate','**_Candidate','El?','EB*_Candidate','SB?','BY?','RS?','Symb*_Candidate','low-mass*_Candidate','brownD*_Candidate','Planet_Candidate','AVS','V*_Candidate','Ir?','RCrB_Candidate','RS?','CV*_Candidate','Nova_Candidate','Er?','a2?','El?',
+            'BY?','Ro?','bC?','SX?','gD?','dS?','RRLyr_Candidate','WV?','Cepheid_Candidate','cC?','Pu?','Cl?',"GlCl_Candidate","Op?",'As?']
+   "emission_object": ["PlanetaryNeb","PN_Candidate",'AIM','StarFormingReg','HIIReg','Cloud','GalNeb','RefNeb','MolCld','DarkNeb','Globule','ComGlob','HVCld','GalNeb','RefNeb','denseCore','Bubble','HIshell','flt',
+                       'Transient','var','metricRad','cmRad','mmRad','smmRad','HI','Infrared','FarIR','MIR','NearIR','Opt','EmObj','blue','UV']
+   "galaxy": ['Galaxy','G_Candidate','LowSurfBrghtG','BlueCompactG','StarburstG','HIIG','EmissionG','RadioG','GinPair',"GtowardsGroup",'GtowardsCl','BrightestCG','GravLensSystem','LensSystem_Candidate','GravLens','Lens_Candidate','LensedImage','lensImage_Candidate','LensedG']
+   "galaxy_group": ['InteractingG','PairG','GroupG','GrG_Candidate','Compact_Gr_G']
+   "galaxy_cluster": ['ClG','ClG_Candidate','PCG','PCG?','SuperClG','SClG_Candidate']
+   "other": ['Void','Blend','Inexistent','PartofCloud','PartofG','Unknown','Region']
+   "exotic": ['Neutron*','Pulsar','WhiteDwarf',"NS_Candidate","WD*_Candidate",'XrayBin','LowMassXBin','HighMassXBin','CataclyV*','Gravitation','LensingEv','BH','GravWaveEvent','radioBurst','Maser','X','ULX','ULX_Candidate','gamma','gammaBurst']
+   "nova": ['Nova','Nova_Candidate',"Supernova",'SN*_Candidate','SNRemnant','SNR_Candidate']
+   "AGN": ["AGN","AGN_Candidate","Seyfert","Seyfert1","Seyfert2","LINER","QSO","QSO_Candidate","Blazar","Blazar_Candidate","BLLac","BLLac_Candidate",'LensedQ']
+   "extended_AGN": []
+#----------------------------------------------------------------------------------------------------------------------#
+
+#----------------------------------------------------------------------------------------------------------------------#
+# TYPE REFERENCE: This section contains the heuristics of the classification methodology.
+# --------------
+# Object groups are given a ranking based on their liklihood and broken out into extended and non-extended sources.
+#
+type_reference:
+  extended:
+    galaxy_cluster: 0
+    galaxy_group: 0
+    galaxy: 1
+    nova: 1
+    extended_AGN: 2
+    emission_object: 2
+  point:
+    AGN: 0
+    exotic: 1
+    star: 2
+    emission_object: 2

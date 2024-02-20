@@ -1,15 +1,16 @@
 """
 Utility functions for basic functionality of the py:module:`cluster_generator` package.
 """
+import functools
 import logging
 import os
 import pathlib as pt
 import sys
+
+import matplotlib.pyplot as plt
 import sqlalchemy as sql
 import yaml
 from unyt import unyt_array
-import functools
-import matplotlib.pyplot as plt
 
 # -- configuration directory -- #
 _config_directory = os.path.join(pt.Path(__file__).parents[0], "bin", "config.yaml")
@@ -22,8 +23,10 @@ def _yaml_unit_constructor(loader: yaml.FullLoader, node: yaml.nodes.MappingNode
     del kw["input_scalar"]
     return unyt_array(i_s, **kw)
 
+
 def _yaml_sql_type_constructor(loader: yaml.FullLoader, node: yaml.nodes.ScalarNode):
-    return getattr(sql.types,loader.construct_scalar(node))
+    return getattr(sql.types, loader.construct_scalar(node))
+
 
 def _yaml_lambda_loader(loader: yaml.FullLoader, node: yaml.nodes.ScalarNode):
     return eval(loader.construct_scalar(node))
@@ -33,7 +36,7 @@ def _get_loader():
     loader = yaml.FullLoader
     loader.add_constructor("!unyt", _yaml_unit_constructor)
     loader.add_constructor("!lambda", _yaml_lambda_loader)
-    loader.add_constructor("!sql",_yaml_sql_type_constructor)
+    loader.add_constructor("!sql", _yaml_sql_type_constructor)
     return loader
 
 
@@ -128,6 +131,7 @@ class EHalo:
     def __exit__(self, exc_type, exc_value, exc_tb):
         pass
 
+
 def _enforce_style(func):
     """Enforces the mpl style."""
 
@@ -147,6 +151,29 @@ def _enforce_style(func):
 
     return wrapper
 
+
+def set_style():
+    for _k, _v in cgparams["plotting"]["defaults"].items():
+        plt.rcParams[_k] = _v
+
+
 def split(a, n):
     k, m = divmod(len(a), n)
     return [a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n)]
+
+
+def load_object_data():
+    object_dir = os.path.join(pt.Path(__file__).parents[0], "bin", "object_dat.yaml")
+
+    try:
+        with open(object_dir, "r+") as object_file:
+            objs = yaml.load(object_file, _get_loader())
+
+    except FileNotFoundError as er:
+        raise FileNotFoundError(
+            f"Couldn't find the object file! Is it at {object_dir}? Error = {er.__repr__()}"
+        )
+    except yaml.YAMLError as er:
+        raise yaml.YAMLError(f"The object file is corrupted! Error = {er.__repr__()}")
+
+    return objs

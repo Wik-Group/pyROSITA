@@ -1,0 +1,337 @@
+#!/usr/bin/env python
+"""
+Cross matching algorithm for eROSITA data.
+
+Eliza C. Diggins, University of Utah
+"""
+import os
+from argparse import ArgumentParser
+
+import numpy as np
+import pandas as pd
+import sqlalchemy as sql
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
+
+from pyROS.erosita.catalogs import eROSITACatalog
+from pyROS.utils import load_object_data, mylog
+
+# ======================================================================================================================#
+# SETUP                                                                                                                #
+# ======================================================================================================================#
+object_data = load_object_data()
+parser = ArgumentParser()
+
+# req-args
+parser.add_argument(
+    "catalog_path", help="Path to the relevant eROSITA catalog.", type=str
+)
+parser.add_argument(
+    "database_path", help="The path to the X-matching database.", type=str
+)
+
+# opt-args
+parser.add_argument(
+    "-v", "--verbose", help="Enable verbose mode.", default=False, action="store_true"
+)
+parser.add_argument(
+    "-c", "--catalog_type", help="The catalog type to use", default="eRASS1", type=str
+)
+parser.add_argument(
+    "-d",
+    "--databases",
+    help="The XREF sources to include from the database",
+    default=[],
+    nargs="+",
+)
+parser.add_argument(
+    "-o",
+    "--overwrite",
+    help="Allow overwriting of database tables",
+    action="store_true",
+)
+args = parser.parse_args()
+
+# enable the debugger if the verbosity is true
+if args.verbose:
+    mylog.setLevel("DEBUG")
+else:
+    mylog.setLevel("INFO")
+
+# -- Check for consistency -- #
+mylog.info("Performing consistency checks...")
+
+mylog.debug("\tchecking catalog...")
+assert os.path.exists(
+    args.catalog_path
+), f"The catalog path {args.catalog_path} could not be resolved."
+mylog.debug("\tchecking database...")
+assert os.path.exists(
+    args.database_path
+), f"The database path {args.database_path} could not be resolved."
+mylog.debug("\tchecking formatting...")
+assert (
+    args.catalog_type == "eRASS1"
+), "Non-eRASS1 observation missions are not yet implemented."
+
+mylog.info("[DONE] - Consistency Checks")
+
+# ----------------------------------------------------------------------------------------------------------------------#
+# Constructing base level reductions of the database.
+# ----------------------------------------------------------------------------------------------------------------------#
+mylog.info("Performing basic reductions")
+# -- Determine the tables in the database -- #
+mylog.debug("\tResolving database information.")
+database_engine = sql.create_engine(
+    f"sqlite:///{args.database_path}"
+)  # load the database engine.
+database_inspector = sql.inspect(database_engine)  # schema inspector.
+available_tables = list(database_inspector.get_table_names())
+mylog.debug(f"\t\tLocated {len(available_tables)} tables: {available_tables}.")
+
+if ("eROSITA" not in available_tables) or args.overwrite:
+    mylog.info("\tAdding the catalog to the X-match database...")
+
+    try:
+        mylog.debug(f"\t\tLoading the catalog at {args.catalog_path}.")
+        catalog = eROSITACatalog(args.catalog_path, catalog_type=args.catalog_type)
+
+        mylog.debug(f"\t\tAdding the catalog to {args.database_path}.")
+        catalog.add_table_to_xref(args.database_path)  # --> replaces in instantiation.
+
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"The catalog could not be resolved {args.catalog_path}. It was moved during runtime."
+        )
+
+    mylog.info("\t[DONE] - Catalog loaded into XREF database.")
+else:
+    mylog.info("\tCatalog detected.")
+
+
+# check that the tables are all legitimate and remove breaks from the selected databases.
+xref_tables = [table for table in available_tables if table[:4] == "XREF"]
+_locatable_databases = [table[5:] for table in xref_tables]
+
+if not len(args.databases):
+    args.databases = _locatable_databases
+else:
+    if any(k not in _locatable_databases for k in args.databases):
+        mylog.warning(
+            f"\tDatabases {[k for k in args.databases if k not in _locatable_databases]} were specified by not located in schema. They are being skipped."
+        )
+        args.databases = [k for k in args.databases if k in _locatable_databases]
+    else:
+        pass
+
+
+if ("eROSITA_PS" not in available_tables) or args.overwrite:
+    # -- Building the POINT SOURCE table -- #
+    mylog.info("\tGenerating eROSITA_PS...")
+    if (args.overwrite and "eROSITA_PS" in available_tables):
+        _sql_exec = [
+            "DROP TABLE eROSITA_PS",
+            "CREATE TABLE eROSITA_PS AS SELECT * FROM eROSITA WHERE EXT == 0",
+        ]
+    else:
+        _sql_exec = ["CREATE TABLE eROSITA_PS AS SELECT * FROM eROSITA WHERE EXT == 0"]
+
+    with database_engine.connect() as conn:
+        for s in _sql_exec:
+            conn.execute(sql.text(s))
+    mylog.info("\t\t[DONE]")
+else:
+    mylog.info("\teROSTIA_PS already found")
+
+if ("eROSITA_EXT" not in available_tables) or args.overwrite:
+    # -- Building the EXTENDED SOURCE table -- #
+    mylog.info("\tGenerating eROSITA_EXT...")
+    if (args.overwrite and "eROSITA_EXT" in available_tables):
+        _sql_exec = [
+            "DROP TABLE eROSITA_EXT",
+            "CREATE TABLE eROSITA_EXT AS SELECT * FROM eROSITA WHERE EXT > 0",
+        ]
+    else:
+        _sql_exec = ["CREATE TABLE eROSITA_EXT AS SELECT * FROM eROSITA WHERE EXT > 0;"]
+    with database_engine.connect() as conn:
+        for s in _sql_exec:
+            conn.execute(sql.text(s))
+    mylog.info("\t\t[DONE]")
+else:
+    mylog.info("\teROSTIA_EXT already found")
+
+if ("NO_MATCH" not in available_tables) or args.overwrite:
+    # -- Building the NO_MATCH table -- #
+    mylog.info("\tGenerating NO_MATCH...")
+
+    if (args.overwrite and "NO_MATCH" in available_tables):
+        _sql_exec = [
+            "DROP TABLE NO_MATCH",
+            "CREATE TABLE NO_MATCH AS SELECT * FROM eROSITA AS BASE WHERE ",
+        ]
+    else:
+        _sql_exec = ["CREATE TABLE NO_MATCH AS SELECT * FROM eROSITA AS BASE WHERE "]
+
+    for database in args.databases:
+        _sql_exec[
+            -1
+        ] += f"(BASE.UID NOT IN (SELECT XREF_{database}.UID FROM XREF_{database})) AND "
+    _sql_exec[-1] = _sql_exec[-1][:-4]  # removing tailing AND
+
+    with database_engine.connect() as conn:
+        for s in _sql_exec:
+            conn.execute(sql.text(s))
+    mylog.info("\t\t[DONE]")
+else:
+    mylog.info("\tNO_MATCH already found")
+mylog.info("[DONE] - Basic Reductions")
+
+# ----------------------------------------------------------------------------------------------------------------------#
+# Proceeding to catalog matching.                                                                                      #
+# ----------------------------------------------------------------------------------------------------------------------#
+# In this stage, we move through matching levels in reverse order. Each database is pulled, read and matched for
+# objects that are identified as the same level.
+#
+# Each new level gets a MATCH_LVL_EXT or MATCH_LVL_PS for the level it corresponds to. At each level, we only include the
+# best match of that type.
+#
+
+mylog.info("CATALOG MATCHING ALGORITHM -- START:")
+levels = [2, 1, 0]
+
+
+# -- cycle through the groups -- #
+with logging_redirect_tqdm(loggers=[mylog]):
+    for group_type in tqdm(
+        ["EXT", "PS"], desc="Locating type-level matches", leave=False
+    ):
+        mylog.info(f"CATALOG MATCH - {group_type} - START")
+
+        with database_engine.connect() as conn:
+            cat_df = pd.read_sql(f"eROSITA_{group_type}", con=conn)
+
+        type_dfs = []
+        # -- cycle through the match levels -- #
+        for level in tqdm(
+            levels,
+            desc=f"Performing catalog reduction ({group_type})",
+            position=1,
+            leave=False,
+        ):
+            mylog.info(f"\tCATALOG MATCH - {group_type} - LVL:{level} - START")
+
+            # determine the matched groups #
+            _level_matched_categories = [
+                key
+                for key, value in object_data["type_reference"][
+                    ("extended" if group_type == "EXT" else "point")
+                ].items()
+                if value == level
+            ]
+
+            level_dfs = []
+
+            for table in tqdm(
+                args.databases,
+                desc=f"Performing level {level} reductions",
+                position=2,
+                leave=False,
+            ):
+                mylog.info(
+                    f"\t\tCATALOG MATCH - {group_type} - LVL:{level} - TBL:{table} - START"
+                )
+
+                # building the table matched object types #
+                _table_matched_object_types = []
+                for k, v in object_data["object_reference_table"][table].items():
+                    if k in _level_matched_categories:
+                        _table_matched_object_types += v
+                    else:
+                        pass
+
+                # pulling the data #
+                with database_engine.connect() as conn:
+                    data_df = pd.read_sql(f"XREF_{table}", con=conn)
+
+                # pulling data with matches #
+                matched_data_df = data_df.loc[
+                    data_df["Type"].isin(_table_matched_object_types), :
+                ]
+                _count_unred = len(matched_data_df)
+
+                # merge the data
+                matched_data_df = matched_data_df.loc[
+                    :, ["Type", "Object", "DELTA", "UID"]
+                ].merge(cat_df, how="inner", on="UID")
+
+                # reduce to closest
+                matched_data_df = matched_data_df.loc[
+                    matched_data_df.groupby("UID")["DELTA"].idxmin()
+                ]
+                matched_data_df["SOURCE_XMATCH"] = table
+                _count_red = len(matched_data_df)
+                level_dfs.append(matched_data_df.loc[:, :])
+
+                mylog.info(
+                    f"\t\t\t COUNT_UNRED: {_count_unred}, COUNT_RED: {_count_red}, %MATCHED: {np.round(100*_count_red/len(cat_df),decimals=2)}%"
+                )
+                mylog.info(
+                    f"\t\tCATALOG MATCH - {group_type} - LVL:{level} - TBL:{table} - DONE"
+                )
+            # -------------------------------------------------------------------------------------------------------------#
+            # Levelized reductions
+
+            level_df = pd.concat(level_dfs, ignore_index=True)
+            level_df["LEVEL_VAL"] = level
+            level_df = level_df.loc[level_df.groupby("UID")["DELTA"].idxmin()]
+            type_dfs.append(level_df.loc[:, :])
+            mylog.info(
+                f"\t\t%MATCHED: {np.round(100*len(level_df)/len(cat_df),decimals=2)}%"
+            )
+            mylog.info(f"\t\tWRITE TO XREF_MATCH_{level}_{group_type}.")
+
+            with database_engine.connect() as conn:
+                level_df.to_sql(
+                    f"MATCH_{level}_{group_type}",
+                    con=conn,
+                    index=False,
+                    if_exists="replace",
+                )
+
+            mylog.info(f"\tCATALOG MATCH - {group_type} - LVL:{level} - DONE")
+
+        # -------------------------------------------------------------------------------------------------------------#
+        # Typed best match.
+        type_df = pd.concat(type_dfs, ignore_index=True)
+        type_df = type_df.loc[type_df.groupby("UID")["LEVEL_VAL"].idxmin()]
+        type_df = type_df.loc[type_df.groupby("UID")["DELTA"].idxmin()]
+
+        mylog.info(
+            f"\t%MATCHED: {np.round(100 * len(type_df) / len(cat_df), decimals=2)}%"
+        )
+        mylog.info(f"\tWRITE TO XREF_MATCH_{group_type}.")
+
+        with database_engine.connect() as conn:
+            type_df.to_sql(
+                f"MATCH_{group_type}", con=conn, index=False, if_exists="replace"
+            )
+
+        mylog.info(f"CATALOG MATCH - {group_type} - DONE")
+
+mylog.info("CATALOG MATCHING COMPLETED.")
+
+# ----------------------------------------------------------------------------------------------------------------------#
+# Complete by combining tables and matching.
+
+
+exec_sql = [
+    "CREATE TABLE MATCH AS SELECT * FROM (SELECT * FROM MATCH_PS UNION ALL SELECT * FROM MATCH_EXT);"
+]
+
+if "MATCH" in available_tables:
+    exec_sql = ["DROP TABLE MATCH"] + exec_sql
+
+mylog.info(f"Writing completed matching database at MATCH to {args.database_path}.")
+with database_engine.connect() as conn:
+    for s in exec_sql:
+        conn.execute(sql.text(s))

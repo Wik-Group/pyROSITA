@@ -1,0 +1,175 @@
+#!/usr/bin/env python
+"""
+Callable script to summarize the findings of the XREF procedure for eRASS1.
+"""
+import os
+from argparse import ArgumentParser
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import rich.table as ptable
+import sqlalchemy as sql
+from rich.console import Console
+from rich.markdown import Markdown
+
+from pyROS.utils import load_object_data, mylog, set_style
+
+
+def _plot_summary(dataframe, colorlabel="", title="", output="", **kwargs):
+    figure = plt.figure(figsize=(10, 5))
+    axes = figure.add_subplot(111, projection="aitoff")
+    axes.grid()
+    q = axes.scatter(np.deg2rad(dataframe["LII"]), dataframe["BII"], **kwargs)
+
+    axes.set_title(title, pad=30)
+    axes.set_xlabel(r"Galactic Longitude, $l$", labelpad=10)
+    axes.set_ylabel(r"Galactic Latitude, $b$")
+    plt.colorbar(q, label=colorlabel)
+    plt.subplots_adjust(top=0.95, left=0.05, right=0.95, bottom=0.05)
+    if args.directory:
+        plt.savefig(output, dpi=300)
+    else:
+        plt.show()
+
+
+# ======================================================================================================================#
+# Setup
+# ======================================================================================================================#
+# mpl config
+set_style()
+# object data setup
+object_data = load_object_data()
+available_types = {
+    **object_data["type_reference"]["extended"],
+    **object_data["type_reference"]["point"],
+}
+match_dict = {k: [] for k in available_types}
+
+# RICH setup
+console = Console()
+
+## -- Argument Parsing -- ##
+parser = ArgumentParser()
+parser.add_argument("database", type=str, help="The path to the database to summarize.")
+parser.add_argument(
+    "-d", "--directory", type=str, help="The directory for the output.", default=None
+)
+args = parser.parse_args()
+
+# ======================================================================================================================#
+# DATABASE INTERACTIONS
+# ======================================================================================================================#
+mylog.info(f"Generating summary for {args.database}.")
+assert os.path.exists(args.database), f"The database {args.database} doesn't exist."
+
+# Build the database tables.
+mylog.debug("\tResolving database information.")
+database_engine = sql.create_engine(
+    f"sqlite:///{args.database}"
+)  # load the database engine.
+database_inspector = sql.inspect(database_engine)  # schema inspector.
+available_tables = list(database_inspector.get_table_names())
+mylog.debug(f"\t\tLocated {len(available_tables)} tables: {available_tables}.")
+databases = [k[5:] for k in available_tables if k[:4] == "XREF"]
+
+# grabbing matches for each of the databases.
+for database in databases:
+    for k, _ in match_dict.items():
+        match_dict[k] += object_data["object_reference_table"][database][k]
+
+
+## -- Pulling Data -- ##
+with database_engine.connect() as conn:
+    cat_df = pd.read_sql("eROSITA", con=conn)
+
+with database_engine.connect() as conn:
+    match_df = pd.read_sql("MATCH", con=conn)
+
+with database_engine.connect() as conn:
+    unmatched_df = pd.read_sql("NO_MATCH", con=conn)
+
+# ======================================================================================================================#
+# Producing plots
+# ======================================================================================================================#
+colors = np.log10(unmatched_df["ML_RATE_3"])
+_plot_summary(
+    unmatched_df,
+    colorlabel=r"Log Emission Rate $\left[\mathrm{0.5-5\;keV}\right],\;\left[\mathrm{cts\;s^{-1}}\right]$",
+    output=os.path.join(args.directory, "NO_MATCH.png"),
+    title="Unmatched Sources in eRASS1 (eROSITA)",
+    s=3 * unmatched_df["POS_ERR"] / np.amin(unmatched_df["POS_ERR"]),
+    c=colors,
+    cmap="inferno",
+)
+
+colors = np.log10(match_df["ML_RATE_3"])
+_plot_summary(
+    match_df,
+    colorlabel=r"Log Emission Rate $\left[\mathrm{0.5-5\;keV}\right],\;\left[\mathrm{cts\;s^{-1}}\right]$",
+    output=os.path.join(args.directory, "MATCH.png"),
+    title="Matched Sources in eRASS1 (eROSITA)",
+    s=3 * match_df["POS_ERR"] / np.amin(match_df["POS_ERR"]),
+    c=colors,
+    cmap="inferno",
+)
+
+for k, _ in available_types.items():
+    q = match_df[match_df["Type"].isin(match_dict[k])]
+    colors = np.log10(q["ML_RATE_3"])
+    _plot_summary(
+        q,
+        colorlabel=r"Log Emission Rate $\left[\mathrm{0.5-5\;keV}\right],\;\left[\mathrm{cts\;s^{-1}}\right]$",
+        output=os.path.join(args.directory, f"{k}"),
+        title=f"Matched {k} in eRASS1 (eROSITA)",
+        s=3 * q["POS_ERR"] / np.amin(q["POS_ERR"]),
+        c=colors,
+        cmap="inferno",
+    )
+
+# ======================================================================================================================#
+# Print the summary
+_exec_string = f"""
+# XREF Summary: {args.database}
+"""
+
+console.print(Markdown(_exec_string))
+
+# -- General Summary -- #
+
+console.print("[bold blue]General Summary[/bold blue]")
+console.print(f"[green]Utilized reference catalogs[/green]: {databases}.")
+console.print("[green]eROSITA Catalog[/green]: eRASS1.")
+percent_ext, percent_ps = np.round(
+    100 * len(cat_df[cat_df["EXT"] != 0]) / len(cat_df), decimals=3
+), np.round(100 * len(cat_df[cat_df["EXT"] == 0]) / len(cat_df), decimals=3)
+console.print(
+    f"[green]# of eROSITA Catalog records:[/green] {len(cat_df)}. [% Extended: {percent_ext}%, % Point Source: {percent_ps}%]"
+)
+console.print(
+    f"[green]# of records matched in XREF:[/green] {len(match_df)}. [{np.round(100*len(match_df)/len(cat_df),decimals=3)}%]"
+)
+for database in databases:
+    console.print(
+        f"\t[green] # matched from {database}[/green]: {len(match_df[match_df['SOURCE_XMATCH']==database])}. [{np.round(100*len(match_df[match_df['SOURCE_XMATCH']==database])/len(cat_df),decimals=3)}%]"
+    )
+# -- Match Summary -- #
+
+# -- summary match table -- #
+console.print("[bold blue]Match Summary Data[/bold blue]")
+
+
+tbl = ptable.Table(title="Match Type Summary")
+
+tbl.add_column("Object Type")
+tbl.add_column("Algorithm Level")
+tbl.add_column("Number of Matches")
+tbl.add_column("% of Matches")
+
+for k, v in available_types.items():
+    q = len(match_df[match_df["Type"].isin(match_dict[k])])
+    tbl.add_row(
+        str(k), str(v), str(q), f"{np.round(100*(q/len(match_df)),decimals=3)}%"
+    )
+
+console.print(tbl)

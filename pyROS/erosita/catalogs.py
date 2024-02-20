@@ -223,7 +223,7 @@ class eROSITACatalog:
                 connection=filename,
             )
 
-    def _add_table_to_xref(self, database):
+    def add_table_to_xref(self, database):
         import sqlalchemy as sql
 
         eng = sql.create_engine(f"sqlite:///{database}")
@@ -281,5 +281,5 @@ if __name__ == "__main__":
         groupsize=5,
         maxthreads=1,
         overwrite=True,
-        included_databases=["SIMBAD"],
+        included_databases=["NED", "SIMBAD"],
     )

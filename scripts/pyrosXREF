@@ -1,26 +1,25 @@
 #!/usr/bin/bash
+# ======================================================================================================================#
+# SETUP                                                                                                                 #
+# ======================================================================================================================#
+AVAILABLE_DRS=("eRASS1")
 CALLSIG=$1 # the base call signature.
+DR_VAR=$2
 HEADER="\x1b[33;49m[\x1b[31;49mpyROS XREF\x1b[33;49m]\x1b[39;49m: "
 
-if [ "$CALLSIG" = "build" ]; then
-  echo "${@:2}"
-  pyrosXREF_build "${@:2}"
-
-elif [ "$CALLSIG" = "add" ]; then
-
-  if [ "$2" = "cat" ]; then
-    pyrosXREF_addcat "${@:3}"
-
-  elif [ "$2" = "sort" ]; then
-    pyrosXREF_addsort "${@:3}"
-
-  else
+if [[ ! " ${AVAILABLE_DRS[*]} " =~ [[:space:]]${DR_VAR}[[:space:]] ]]; then
+    echo -e "$HEADER [\x1b[35mERROR\x1b[0m] $DR_VAR is not a valid data release for eROSITA."
     exit 1
-  fi
+fi
 
-elif [ "$CALLSIG" = "" ]; then
-  echo -e "$HEADER [\x1b[35mERROR\x1b[0m] pyrosXREF must be followed by a valid command."
+if [ "$CALLSIG" = "build" ]; then
+  "XREF${DR_VAR}build" "${@:3}"
 
+elif [ "$CALLSIG" = "cat" ]; then
+  "XREF${DR_VAR}cat" "${@:3}"
+
+elif [ "$CALLSIG" = "summary" ]; then
+  "XREF${DR_VAR}summary" "${@:3}"
 else
   echo -e "$HEADER [\x1b[35mERROR\x1b[0m] $CALLSIG is not a valid command."
   exit 1

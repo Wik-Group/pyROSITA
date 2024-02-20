@@ -10,17 +10,7 @@ setup(
     author_email="eliza.diggins@utah.edu",
     url="https://github.com/Wik-Group/pyROS",
     download_url="https://github.com/Wik-Group/pyROS/tarball/0.1.0",
-    install_requires=[
-        "numpy",
-        "scipy",
-        "yt",
-        "unyt",
-        "cython",
-        "ruamel.yaml",
-        "dill",
-        "astropy",
-        "astroquery",
-    ],
+    install_requires=["numpy", "scipy", "astropy", "astroquery", "rich"],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Operating System :: OS Independent",
@@ -31,8 +21,8 @@ setup(
     scripts=[
         "scripts/pyros",
         "scripts/pyrosXREF",
-        "scripts/pyrosXREF_build",
-        "scripts/pyrosXREF_addcat",
-        "scripts/pyrosXREF_addsort",
+        "scripts/eRASS1/XREFeRASS1build",
+        "scripts/eRASS1/XREFeRASS1cat",
+        "scripts/eRASS1/XREFeRASS1summary",
     ],
 )

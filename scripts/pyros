@@ -15,6 +15,10 @@ echo -e "\x1b[31;1m               Written by: Eliza C. Diggins                  
 echo -e "\x1b[31;1m                  University of Utah, Dept. of Physics and Astronomy                           \x1b[0m"
 echo -e "\x1b[31;1m                                                                                               \x1b[0m"
 echo -e "\x1b[31;1m                                                                                               \x1b[0m"
+
+
+# Grabbing the call signature
+
 CALLSIG=$1 # the base call signature.
 HEADER="\x1b[33;49m[\x1b[31;49mpyROS\x1b[33;49m]\x1b[39;49m: "
 
